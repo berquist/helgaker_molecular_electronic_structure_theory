@@ -6,10 +6,17 @@ from sugar import `=>`
 
 ## An occupation number is 1 if the spin orbital at that position is present
 ## in a determinant and zero otherwise.
-type ON = range[0..1]
+type
+  ON = range[0..1]
+type
+  Phase = enum
+    pos, neg
 ## An occupation number vector is how we represent a Slater determinant in
 ## Fock space.
-type ONVector = seq[ON]
+type
+  ONVector = object
+    vec: seq[ON]
+    phase: Phase
 
 proc numToON(i: SomeInteger): ON {.raises: [ValueError].} =
   if not contains([0, 1], i):
@@ -18,22 +25,22 @@ proc numToON(i: SomeInteger): ON {.raises: [ValueError].} =
   int(i)
 
 proc toONVector(it: openArray[SomeInteger]): ONVector {.raises: [ValueError].} =
-  it.map(i => i.numToON())
+  ONVector(vec: it.map(i => i.numToON()))
 
 ## Inner product of two occupation number vectors, eq. (1.1.3)
 proc `*`(left, right: ONVector): ON =
-  let delta = zip(left, right).map(proc (t: (ON, ON)): ON =
-                                     int(t[0] == t[1]).numToON())
+  let delta = zip(left.vec, right.vec).map(proc (t: (ON, ON)): ON =
+                                             int(t[0] == t[1]).numToON())
   foldl(delta, a * b, int(1))
 
 ## Apply the creation operator at the given index.
 proc create(v: ONVector, index: int): Option[ONVector] =
-  case v[index]:
+  case v.vec[index]:
     # eq. (1.2.1)
     of 0:
       # TODO needs copy?
       var r = v
-      r[index] = 1
+      r.vec[index] = 1
       # TODO phase factor
       some(r)
     # eq. (1.2.2)
@@ -42,13 +49,13 @@ proc create(v: ONVector, index: int): Option[ONVector] =
 
 ## Apply the annihilation operator at the given index.
 proc annihilate(v: ONVector, index: int): Option[ONVector] =
-  case v[index]:
+  case v.vec[index]:
     of 0:
       none(ONVector)
     of 1:
       # TODO needs copy?
       var r = v
-      r[index] = 0
+      r.vec[index] = 0
       some(r)
 
 when isMainModule:
@@ -58,6 +65,8 @@ when isMainModule:
     in1 = @[0, 1, 0, 0].toONVector()
     in2 = @[0, 0, 1, 0].toONVector()
     in12 = @[0, 1, 1, 0].toONVector()
+  echo vac
+  echo in12
 
   suite "ch1":
     test "numToON":
