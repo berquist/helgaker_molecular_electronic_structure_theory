@@ -1,3 +1,4 @@
+import options
 import sequtils
 import strformat
 import unittest
@@ -21,40 +22,27 @@ proc `*`(left, right: ONVector): ON =
                                      int(t[0] == t[1]).numToON())
   foldl(delta, a * b, int(1))
 
-type
-  ## Was the result of applying an operator successful (producing a new
-  ## operator number vector), or did it fail (produce zero)?
-  OperatorKind = enum
-    opkindSuccess,
-    opkindFailure
-  OperatorResult = object
-    case kind: OperatorKind
-    of opkindSuccess:
-      res: ONVector
-    of opkindFailure:
-      discard
-
 ## Apply the creation operator at the given index.
-proc create(v: ONVector, index: int): OperatorResult =
+proc create(v: ONVector, index: int): Option[ONVector] =
   case v[index]:
     of 0:
       # TODO needs copy?
       var r = v
       r[index] = 1
-      return OperatorResult(kind: opkindSuccess, res: r)
+      some(r)
     of 1:
-      return OperatorResult(kind: opkindFailure)
+      none(ONVector)
 
 ## Apply the annihilation operator at the given index.
-proc annihilate(v: ONVector, index: int): OperatorResult =
+proc annihilate(v: ONVector, index: int): Option[ONVector] =
   case v[index]:
     of 0:
-      return OperatorResult(kind: opkindFailure)
+      none(ONVector)
     of 1:
       # TODO needs copy?
       var r = v
       r[index] = 0
-      return OperatorResult(kind: opkindSuccess, res: r)
+      some(r)
 
 when isMainModule:
   let
@@ -62,10 +50,6 @@ when isMainModule:
     in1 = @[0, 1, 0, 0].toONVector()
     in2 = @[0, 0, 1, 0].toONVector()
     in12 = @[0, 1, 1, 0].toONVector()
-  echo vac.create(0)
-  echo vac.annihilate(0)
-  echo in12.create(1)
-  echo in12.annihilate(1)
 
   suite "ch1":
     test "numToON":
@@ -76,6 +60,11 @@ when isMainModule:
       check: in1 * in1 == 1
       check: in1 * in2 == 0
       check: in1 * in12 == 0
-    # test "create":
-    #   check: vac.create(0) == OperatorResult(kind: opkindSuccess, res: @[1, 0, 0, 0].toONVector())
-    #   check: vac.create(3) == OperatorResult(kind: opkindSuccess, res: @[0, 0, 0, 1].toONVector())
+    test "create":
+      check: vac.create(0).get() == @[1, 0, 0, 0].toONVector()
+      check: vac.create(3).get() == @[0, 0, 0, 1].toONVector()
+      check: vac.create(0).get().create(1) == some(@[1, 1, 0, 0].toONVector())
+      check: vac.create(0).get().create(0) == none(ONVector)
+    test "annihilate":
+      check: in1.annihilate(1).get() == vac
+      check: in1.annihilate(0) == none(ONVector)
