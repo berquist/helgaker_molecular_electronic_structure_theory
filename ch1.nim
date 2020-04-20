@@ -4,7 +4,11 @@ import strformat
 import unittest
 from sugar import `=>`
 
+## An occupation number is 1 if the spin orbital at that position is present
+## in a determinant and zero otherwise.
 type ON = range[0..1]
+## An occupation number vector is how we represent a Slater determinant in
+## Fock space.
 type ONVector = seq[ON]
 
 proc numToON(i: SomeInteger): ON {.raises: [ValueError].} =
@@ -16,7 +20,7 @@ proc numToON(i: SomeInteger): ON {.raises: [ValueError].} =
 proc toONVector(it: openArray[SomeInteger]): ONVector {.raises: [ValueError].} =
   it.map(i => i.numToON())
 
-## inner product of two occupation number vectors
+## Inner product of two occupation number vectors, eq. (1.1.3)
 proc `*`(left, right: ONVector): ON =
   let delta = zip(left, right).map(proc (t: (ON, ON)): ON =
                                      int(t[0] == t[1]).numToON())
@@ -25,11 +29,14 @@ proc `*`(left, right: ONVector): ON =
 ## Apply the creation operator at the given index.
 proc create(v: ONVector, index: int): Option[ONVector] =
   case v[index]:
+    # eq. (1.2.1)
     of 0:
       # TODO needs copy?
       var r = v
       r[index] = 1
+      # TODO phase factor
       some(r)
+    # eq. (1.2.2)
     of 1:
       none(ONVector)
 
@@ -46,6 +53,7 @@ proc annihilate(v: ONVector, index: int): Option[ONVector] =
 
 when isMainModule:
   let
+    # The vacuum state, eq. (1.1.10)
     vac = @[0, 0, 0, 0].toONVector()
     in1 = @[0, 1, 0, 0].toONVector()
     in2 = @[0, 0, 1, 0].toONVector()
@@ -56,6 +64,7 @@ when isMainModule:
       check: numToON(0) == 0
       check: numToON(1) == 1
     test "innerProduct":
+      # eq. (1.1.11)
       check: vac * vac == 1
       check: in1 * in1 == 1
       check: in1 * in2 == 0
