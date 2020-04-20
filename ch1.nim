@@ -1,5 +1,6 @@
 import sequtils
 import strformat
+import unittest
 from sugar import `=>`
 
 type ON = range[0..1]
@@ -31,7 +32,7 @@ type
     of opkindSuccess:
       res: ONVector
     of opkindFailure:
-      failure: int # TODO enforce zero
+      discard
 
 ## Apply the creation operator at the given index.
 proc create(v: ONVector, index: int): OperatorResult =
@@ -61,11 +62,20 @@ when isMainModule:
     in1 = @[0, 1, 0, 0].toONVector()
     in2 = @[0, 0, 1, 0].toONVector()
     in12 = @[0, 1, 1, 0].toONVector()
-  doAssert vac * vac == 1
-  doAssert in1 * in1 == 1
-  doAssert in1 * in2 == 0
-  doAssert in1 * in12 == 0
   echo vac.create(0)
   echo vac.annihilate(0)
   echo in12.create(1)
   echo in12.annihilate(1)
+
+  suite "ch1":
+    test "numToON":
+      check: numToON(0) == 0
+      check: numToON(1) == 1
+    test "innerProduct":
+      check: vac * vac == 1
+      check: in1 * in1 == 1
+      check: in1 * in2 == 0
+      check: in1 * in12 == 0
+    # test "create":
+    #   check: vac.create(0) == OperatorResult(kind: opkindSuccess, res: @[1, 0, 0, 0].toONVector())
+    #   check: vac.create(3) == OperatorResult(kind: opkindSuccess, res: @[0, 0, 0, 1].toONVector())
